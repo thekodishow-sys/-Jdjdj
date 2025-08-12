@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моя первая страница</title>
+    <title>Защищенная страница</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,57 +13,192 @@
             padding: 20px;
             background-color: #f4f4f4;
         }
-        header {
-            background: #35424a;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
         .container {
             width: 80%;
-            margin: auto;
-            overflow: hidden;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        footer {
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
             background: #35424a;
             color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #42545c;
+        }
+        .auth-section {
+            display: block;
+        }
+        .content-section {
+            display: none;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            margin: 10px 0;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
             text-align: center;
             padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
+            cursor: pointer;
+            background: #eee;
+        }
+        .tab.active {
+            background: #35424a;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Добро пожаловать на мою страницу</h1>
-    </header>
-
     <div class="container">
-        <section>
-            <h2>О нас</h2>
-            <p>Это простая HTML-страница, созданная в качестве примера.</p>
-        </section>
-
-        <section>
-            <h2>Наши услуги</h2>
-            <ul>
-                <li>Веб-разработка</li>
-                <li>Дизайн</li>
-                <li>Консультации</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Контакты</h2>
-            <p>Email: info@example.com</p>
-            <p>Телефон: +7 (123) 456-78-90</p>
-        </section>
+        <!-- Секция аутентификации -->
+        <div id="auth-section" class="auth-section">
+            <div class="tabs">
+                <div id="login-tab" class="tab active" onclick="showLogin()">Вход</div>
+                <div id="register-tab" class="tab" onclick="showRegister()">Регистрация</div>
+            </div>
+            
+            <!-- Форма входа -->
+            <div id="login-form">
+                <h2>Вход</h2>
+                <div id="login-error" class="error"></div>
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Пароль" required>
+                <button onclick="login()">Войти</button>
+            </div>
+            
+            <!-- Форма регистрации -->
+            <div id="register-form" style="display: none;">
+                <h2>Регистрация</h2>
+                <div id="register-error" class="error"></div>
+                <div id="register-success" class="success"></div>
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Пароль" required>
+                <button onclick="register()">Зарегистрироваться</button>
+            </div>
+        </div>
+        
+        <!-- Основной контент (показывается после авторизации) -->
+        <div id="content-section" class="content-section">
+            <h2>Добро пожаловать!</h2>
+            <p>Вы успешно авторизовались. Вот ваш защищенный контент:</p>
+            
+            <section>
+                <h3>Информация</h3>
+                <p>Этот контент доступен только авторизованным пользователям.</p>
+            </section>
+            
+            <button onclick="logout()">Выйти</button>
+        </div>
     </div>
 
-    <footer>
-        <p>&copy; 2023 Моя компания. Все права защищены.</p>
-    </footer>
+    <script>
+        // Инициализация Supabase
+        const supabaseUrl = 'https://gturdlocxbqshdwfhofk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0dXJkbG9jeGJxc2hkd2Zob2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDU1MzAsImV4cCI6MjA3MDU4MTUzMH0.ghW31Kg9VtbkL3HbD1Ga7gXErEzpQp6OHDSU0FjsFVE';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Проверка авторизации при загрузке страницы
+        checkAuth();
+        
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('content-section').style.display = 'block';
+            }
+        }
+        
+        function showLogin() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('login-tab').classList.add('active');
+            document.getElementById('register-tab').classList.remove('active');
+        }
+        
+        function showRegister() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+            document.getElementById('login-tab').classList.remove('active');
+            document.getElementById('register-tab').classList.add('active');
+        }
+        
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorElement = document.getElementById('login-error');
+            
+            errorElement.textContent = '';
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) {
+                errorElement.textContent = error.message;
+            } else {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('content-section').style.display = 'block';
+            }
+        }
+        
+        async function register() {
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const errorElement = document.getElementById('register-error');
+            const successElement = document.getElementById('register-success');
+            
+            errorElement.textContent = '';
+            successElement.textContent = '';
+            
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password
+            });
+            
+            if (error) {
+                errorElement.textContent = error.message;
+            } else {
+                successElement.textContent = 'Регистрация успешна! Проверьте вашу почту для подтверждения.';
+                document.getElementById('register-email').value = '';
+                document.getElementById('register-password').value = '';
+                showLogin();
+            }
+        }
+        
+        async function logout() {
+            await supabase.auth.signOut();
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('content-section').style.display = 'none';
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+            showLogin();
+        }
+    </script>
 </body>
 </html>
