@@ -373,7 +373,8 @@ function buildGameOverButtons(){
  buttons.push({x:145,y:555,w:250,h:56,cb:()=>{store.hearts=3;persist();scene='menu';buttons=[];}});
 }
 function drawGameOverButtons(){
- buttonVisual(95,475,350,66,'ЕЩЁ РАЗ','#ff7a3c',22);buttonVisual(145,555,250,56,'В МЕНЮ','#31445f',18);
+ button(95,475,350,66,'ЕЩЁ РАЗ',()=>{store.hearts=3;persist();resetRun(0);scene='play';buttons=[];},'#ff7a3c',22);
+ button(145,555,250,56,'В МЕНЮ',()=>{store.hearts=3;persist();scene='menu';buttons=[];},'#31445f',18);
 }
 const oldDrawGameOver=drawGameOver;
 drawGameOver=function(){oldDrawGameOver();drawGameOverButtons();};
