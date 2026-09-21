@@ -1,18 +1,33 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>АстроПрыг — vertical slice</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#081426">
+  <title>АстроПрыг</title>
   <style>
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081426;font-family:Inter,Arial,sans-serif}
-    #game{width:100%;height:100%;display:grid;place-items:center}
-    canvas{max-width:100vw;max-height:100vh;box-shadow:0 0 40px #0008}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081426;font-family:Arial,sans-serif;touch-action:none}
+    #game{position:fixed;inset:0;display:grid;place-items:center;background:#081426}
+    canvas{display:block;max-width:100vw;max-height:100vh}
+    #boot-status,#fatal{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#081426;color:#fff;text-align:center;padding:32px}
+    #boot-status b{font-size:30px;margin-bottom:14px} #boot-status span{opacity:.7}
+    #fatal{display:none;background:#230b14} #fatal div{max-width:480px;font-size:18px;line-height:1.5}
   </style>
 </head>
 <body>
-<div id="game"></div>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
-<script src="./src/game.js"></script>
+  <div id="game"></div>
+  <div id="boot-status"><b>АСТРОПРЫГ</b><span>Запуск игрового мира…</span></div>
+  <div id="fatal"><div>Не удалось запустить игру.</div></div>
+  <script>
+    window.__ASTROPYRG_READY__=false;
+    setTimeout(function(){
+      if(!window.__ASTROPYRG_READY__){
+        var f=document.getElementById('fatal'); if(f){f.style.display='flex';f.querySelector('div').textContent='Игра не запустилась. Ошибка движка или игрового кода.';}
+      }
+    },9000);
+  </script>
+  <script src="./vendor/phaser.min.js"></script>
+  <script src="./src/game.js"></script>
 </body>
 </html>
