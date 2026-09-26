@@ -1,204 +1,239 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Защищенная страница</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            width: 80%;
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background: #35424a;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:hover {
-            background: #42545c;
-        }
-        .auth-section {
-            display: block;
-        }
-        .content-section {
-            display: none;
-        }
-        .error {
-            color: red;
-            margin: 10px 0;
-        }
-        .success {
-            color: green;
-            margin: 10px 0;
-        }
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-        }
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            cursor: pointer;
-            background: #eee;
-        }
-        .tab.active {
-            background: #35424a;
-            color: white;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111315">
+<title>Вахтовик — Сколько до дома?</title>
+<style>
+:root{
+  --bg:#f3f4f5;--card:#fff;--text:#141619;--muted:#747b83;--line:#e7e9ec;
+  --accent:#2f6f63;--accent2:#e4f0ed;--danger:#c64d4d;--shadow:0 10px 30px rgba(20,22,25,.08);
+}
+body.dark{--bg:#111315;--card:#1a1d20;--text:#f6f7f8;--muted:#9ba2aa;--line:#2a2e33;--accent:#75b8aa;--accent2:#19352f;--danger:#e77575;--shadow:none}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea,select{font:inherit}
+button{border:0;cursor:pointer}
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding:16px 16px 96px}
+.top{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 16px}
+.brand{font-weight:800;font-size:19px;letter-spacing:.2px}
+.pill{background:var(--card);border:1px solid var(--line);padding:8px 12px;border-radius:999px;color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.hero{padding:24px}
+.eyebrow{color:var(--muted);font-size:13px;margin-bottom:4px}
+.big{font-size:64px;line-height:.95;font-weight:850;letter-spacing:-2px}
+.subbig{font-size:16px;font-weight:700;margin-top:8px}
+.progress{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin:18px 0 12px}
+.progress>i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.row{display:flex;gap:10px}
+.stat{flex:1;background:var(--bg);border-radius:18px;padding:14px}
+.stat b{font-size:22px;display:block;margin-top:3px}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-weight:800}
+.small{font-size:13px;color:var(--muted)}
+.task{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line);touch-action:pan-y;user-select:none}
+.task:first-of-type{border-top:0}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:0 0 auto}
+.task.done .check{background:var(--accent);border-color:var(--accent);color:white}
+.task.done .tasktext{text-decoration:line-through;color:var(--muted)}
+.tasktext{flex:1}
+.iconbtn{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--text)}
+.add{width:100%;padding:13px;border-radius:16px;background:var(--accent2);color:var(--accent);font-weight:800;margin-top:10px}
+.inputrow{display:flex;gap:8px;margin-top:10px}
+.inputrow input,.inputrow textarea{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:13px 14px;border-radius:14px;outline:none}
+.primary{background:var(--accent);color:#fff;padding:13px 16px;border-radius:14px;font-weight:800}
+.secondary{background:var(--bg);color:var(--text);padding:12px 14px;border-radius:14px;font-weight:750}
+.danger{background:#f9e8e8;color:var(--danger);padding:12px 14px;border-radius:14px;font-weight:750}
+.note{padding:14px 0;border-top:1px solid var(--line)}
+.note:first-of-type{border-top:0}
+.note strong{display:block}
+.note-actions{display:flex;gap:8px;margin-top:10px}
+.nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(488px,calc(100% - 24px));background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:22px;padding:8px;display:flex;gap:8px;z-index:20}
+body.dark .nav{background:rgba(26,29,32,.94)}
+.nav button{flex:1;background:transparent;color:var(--muted);padding:10px 4px;border-radius:16px;font-size:12px}
+.nav button.active{background:var(--accent2);color:var(--accent);font-weight:800}
+.screen{display:none}
+.screen.active{display:block}
+.center{min-height:82vh;display:flex;flex-direction:column;justify-content:center}
+.logo{width:68px;height:68px;border-radius:20px;background:var(--accent);color:white;display:grid;place-items:center;font-size:32px;margin-bottom:20px}
+h1{font-size:38px;line-height:1.05;margin:0 0 8px;letter-spacing:-1px}
+h2{margin:0 0 4px}
+.muted{color:var(--muted)}
+.stack{display:grid;gap:10px}
+label{font-size:13px;color:var(--muted);font-weight:700}
+.field{display:grid;gap:7px}
+.field input,.field select{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:14px;border-radius:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 13px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--text)}
+.chip.sel{background:var(--accent2);border-color:var(--accent);color:var(--accent);font-weight:800}
+.banner{font-size:12px;color:var(--muted);text-align:center;border:1px dashed var(--line);border-radius:14px;padding:10px;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#111;color:white;padding:11px 14px;border-radius:14px;opacity:0;pointer-events:none;transition:.2s;z-index:40;font-size:13px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.38);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.show{display:flex}
+.sheet{width:min(520px,100%);background:var(--card);border-radius:26px 26px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+.hr{height:1px;background:var(--line);margin:14px 0}
+.setting{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
+.setting:first-child{border-top:0}
+.switch{width:50px;height:30px;border-radius:999px;background:var(--line);padding:3px;transition:.2s}
+.switch i{display:block;width:24px;height:24px;border-radius:50%;background:white;transition:.2s}
+.switch.on{background:var(--accent)}
+.switch.on i{transform:translateX(20px)}
+.empty{text-align:center;color:var(--muted);padding:22px 8px}
+.kicker{font-size:12px;color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:.8px}
+@media(min-width:700px){.app{padding-top:26px}.center{min-height:75vh}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Секция аутентификации -->
-        <div id="auth-section" class="auth-section">
-            <div class="tabs">
-                <div id="login-tab" class="tab active" onclick="showLogin()">Вход</div>
-                <div id="register-tab" class="tab" onclick="showRegister()">Регистрация</div>
-            </div>
-            
-            <!-- Форма входа -->
-            <div id="login-form">
-                <h2>Вход</h2>
-                <div id="login-error" class="error"></div>
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Пароль" required>
-                <button onclick="login()">Войти</button>
-            </div>
-            
-            <!-- Форма регистрации -->
-            <div id="register-form" style="display: none;">
-                <h2>Регистрация</h2>
-                <div id="register-error" class="error"></div>
-                <div id="register-success" class="success"></div>
-                <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Пароль" required>
-                <button onclick="register()">Зарегистрироваться</button>
-            </div>
+<div class="app">
+  <div id="onboarding" class="screen">
+    <div class="center">
+      <div class="logo">⌂</div>
+      <div class="kicker">ВАХТОВИК</div>
+      <h1>Сколько до дома?</h1>
+      <p class="muted">Личный помощник на вахте: дни, задачи и важные записи без лишней рутины.</p>
+      <div class="stack" style="margin-top:18px">
+        <button class="primary" onclick="showCreateShift()">Начать</button>
+        <button class="secondary" onclick="toast('VK ID подключим в нативной версии')">Войти через VK ID</button>
+      </div>
+      <p class="small" style="text-align:center;margin-top:14px">Можно пользоваться без регистрации</p>
+    </div>
+  </div>
+
+  <div id="createShift" class="screen">
+    <div class="top"><div class="brand">Новая вахта</div><button class="pill" onclick="showScreen('onboarding')">Назад</button></div>
+    <div class="card">
+      <div class="field"><label>Дата начала</label><input id="startDate" type="date"></div>
+      <div class="field" style="margin-top:14px"><label>Продолжительность</label>
+        <div class="chips" id="daysChips">
+          <button class="chip" data-days="15">15 дней</button>
+          <button class="chip sel" data-days="30">30 дней</button>
+          <button class="chip" data-days="45">45 дней</button>
+          <button class="chip" data-days="60">60 дней</button>
         </div>
-        
-        <!-- Основной контент (показывается после авторизации) -->
-        <div id="content-section" class="content-section">
-            <h2>Добро пожаловать!</h2>
-            <p>Вы успешно авторизовались. Вот ваш защищенный контент:</p>
-            
-            <section>
-                <h3>Информация</h3>
-                <p>Этот контент доступен только авторизованным пользователям.</p>
-            </section>
-            
-            <button onclick="logout()">Выйти</button>
-        </div>
+      </div>
+      <div class="field" style="margin-top:14px"><label>Ставка за день, ₽ — необязательно</label><input id="rate" inputmode="numeric" placeholder="Например, 5000"></div>
+      <div class="hr"></div>
+      <button class="primary" style="width:100%" onclick="startShift()">Начать вахту</button>
+    </div>
+  </div>
+
+  <div id="main" class="screen">
+    <div class="top"><div class="brand">Вахтовик</div><div id="datePill" class="pill"></div></div>
+    <div class="card hero">
+      <div id="heroMessage" class="eyebrow">Вахта идёт</div>
+      <div id="dayNum" class="big">1</div>
+      <div class="subbig">день вахты</div>
+      <div class="progress"><i id="progressBar" style="width:0%"></i></div>
+      <div class="row">
+        <div class="stat"><span class="small">До дома</span><b id="daysLeft">29 дней</b></div>
+        <div class="stat"><span class="small">Прогресс</span><b id="progressPct">3%</b></div>
+      </div>
+      <div id="earnBlock" class="stat" style="margin-top:10px;display:none"><span class="small">Примерно заработано</span><b id="earned">0 ₽</b></div>
     </div>
 
-    <script>
-        // Инициализация Supabase
-        const supabaseUrl = 'https://gturdlocxbqshdwfhofk.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0dXJkbG9jeGJxc2hkd2Zob2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDU1MzAsImV4cCI6MjA3MDU4MTUzMH0.ghW31Kg9VtbkL3HbD1Ga7gXErEzpQp6OHDSU0FjsFVE';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-        
-        // Проверка авторизации при загрузке страницы
-        checkAuth();
-        
-        async function checkAuth() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                document.getElementById('auth-section').style.display = 'none';
-                document.getElementById('content-section').style.display = 'block';
-            }
-        }
-        
-        function showLogin() {
-            document.getElementById('login-form').style.display = 'block';
-            document.getElementById('register-form').style.display = 'none';
-            document.getElementById('login-tab').classList.add('active');
-            document.getElementById('register-tab').classList.remove('active');
-        }
-        
-        function showRegister() {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('register-form').style.display = 'block';
-            document.getElementById('login-tab').classList.remove('active');
-            document.getElementById('register-tab').classList.add('active');
-        }
-        
-        async function login() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const errorElement = document.getElementById('login-error');
-            
-            errorElement.textContent = '';
-            
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-            
-            if (error) {
-                errorElement.textContent = error.message;
-            } else {
-                document.getElementById('auth-section').style.display = 'none';
-                document.getElementById('content-section').style.display = 'block';
-            }
-        }
-        
-        async function register() {
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            const errorElement = document.getElementById('register-error');
-            const successElement = document.getElementById('register-success');
-            
-            errorElement.textContent = '';
-            successElement.textContent = '';
-            
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password
-            });
-            
-            if (error) {
-                errorElement.textContent = error.message;
-            } else {
-                successElement.textContent = 'Регистрация успешна! Проверьте вашу почту для подтверждения.';
-                document.getElementById('register-email').value = '';
-                document.getElementById('register-password').value = '';
-                showLogin();
-            }
-        }
-        
-        async function logout() {
-            await supabase.auth.signOut();
-            document.getElementById('auth-section').style.display = 'block';
-            document.getElementById('content-section').style.display = 'none';
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
-            showLogin();
-        }
-    </script>
+    <div id="importantCard" class="card" style="display:none">
+      <div class="section-title"><span>Важное</span><span class="small">закреплено</span></div>
+      <strong id="importantText"></strong>
+      <div id="importantDate" class="small" style="margin-top:5px"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span>Сегодня по работе</span><span id="taskCounter" class="small">0/0</span></div>
+      <div id="taskList"></div>
+      <div id="taskAddBox" class="inputrow" style="display:none">
+        <input id="taskInput" placeholder="Что нужно сделать?" onkeydown="if(event.key==='Enter')addTask()">
+        <button class="primary" onclick="addTask()">+</button>
+      </div>
+      <button class="add" onclick="toggleTaskInput()">+ Добавить задачу</button>
+    </div>
+
+    <div id="adBanner" class="banner">Тестовый рекламный блок • в Premium скрывается</div>
+  </div>
+
+  <div id="notes" class="screen">
+    <div class="top"><div class="brand">Записи</div><button class="pill" onclick="openNoteSheet()">+ Добавить</button></div>
+    <div class="card"><div id="notesList"></div></div>
+  </div>
+
+  <div id="profile" class="screen">
+    <div class="top"><div class="brand">Профиль</div><div class="pill">Без регистрации</div></div>
+    <div class="card">
+      <div class="setting"><div><strong>Тёмная тема</strong><div class="small">Меняется сразу</div></div><button id="themeSwitch" class="switch" onclick="toggleTheme()"><i></i></button></div>
+      <div class="setting"><div><strong>Убрать рекламу</strong><div class="small">199 ₽/месяц • 1 990 ₽/год</div></div><button id="premiumSwitch" class="switch" onclick="togglePremium()"><i></i></button></div>
+      <div class="setting"><div><strong>VK ID</strong><div class="small">Сохранение и восстановление данных</div></div><button class="secondary" onclick="toast('Пока тестовый режим')">Подключить</button></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Текущая вахта</div>
+      <div id="shiftSummary" class="small"></div>
+      <button class="danger" style="width:100%;margin-top:14px" onclick="finishShift()">Завершить вахту</button>
+    </div>
+    <div class="card">
+      <div class="section-title">История</div>
+      <div id="history"></div>
+    </div>
+  </div>
+</div>
+
+<div id="nav" class="nav" style="display:none">
+  <button data-screen="main" onclick="navTo('main')">⌂<br>Главная</button>
+  <button data-screen="notes" onclick="navTo('notes')">✎<br>Записи</button>
+  <button data-screen="profile" onclick="navTo('profile')">☺<br>Профиль</button>
+</div>
+
+<div id="noteModal" class="modal" onclick="if(event.target===this)closeNoteSheet()">
+  <div class="sheet">
+    <div class="section-title"><span>Новая запись</span><button class="iconbtn" onclick="closeNoteSheet()">×</button></div>
+    <textarea id="noteInput" rows="4" placeholder="Что нужно запомнить?" style="width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:14px;border-radius:14px;resize:none"></textarea>
+    <div class="field" style="margin-top:10px"><label>Напомнить — необязательно</label><input id="noteDate" type="date"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="secondary" style="flex:1" onclick="saveNote(false)">Просто сохранить</button>
+      <button class="primary" style="flex:1" onclick="saveNote(true)">Сохранить важное</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const KEY='vakhtovik_preview_v2';
+const state=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  shift:null,tasks:[],notes:[],history:[],premium:false,dark:false,daysPreset:30
+};
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function todayISO(){const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10)}
+function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('nav').style.display=['main','notes','profile'].includes(id)?'flex':'none';document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.screen===id)); if(id==='main')renderMain(); if(id==='notes')renderNotes(); if(id==='profile')renderProfile()}
+function navTo(id){showScreen(id)}
+function showCreateShift(){document.getElementById('startDate').value=todayISO();showScreen('createShift')}
+document.getElementById('daysChips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');state.daysPreset=+b.dataset.days;save()}
+function startShift(){const start=document.getElementById('startDate').value||todayISO();const days=state.daysPreset||30;const rate=+document.getElementById('rate').value||0;state.shift={start,days,rate,ended:false};state.tasks=[];save();showScreen('main');toast('Вахта началась')}
+function dayDiff(a,b){const A=new Date(a+'T00:00:00'),B=new Date(b+'T00:00:00');return Math.floor((B-A)/86400000)}
+function shiftCalc(){if(!state.shift)return null;const diff=Math.max(0,dayDiff(state.shift.start,todayISO()));const day=Math.min(state.shift.days,diff+1);const left=Math.max(0,state.shift.days-day);const pct=Math.min(100,Math.round(day/state.shift.days*100));return{day,left,pct}}
+function plural(n,one,few,many){n=Math.abs(n)%100;let n1=n%10;if(n>10&&n<20)return many;if(n1>1&&n1<5)return few;if(n1===1)return one;return many}
+function rub(n){return new Intl.NumberFormat('ru-RU').format(n)+' ₽'}
+function renderMain(){if(!state.shift){showScreen('onboarding');return}const c=shiftCalc();document.getElementById('datePill').textContent=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'short'});document.getElementById('dayNum').textContent=c.day;document.getElementById('daysLeft').textContent=c.left+' '+plural(c.left,'день','дня','дней');document.getElementById('progressPct').textContent=c.pct+'%';document.getElementById('progressBar').style.width=c.pct+'%';
+let msg='Вахта идёт';if(c.pct>=50&&c.pct<80)msg='Половина позади';if(c.left===7)msg='Осталась неделя';if(c.left===3)msg='3 дня до дома';if(c.left===0)msg='Сегодня домой';document.getElementById('heroMessage').textContent=msg;
+const earn=document.getElementById('earnBlock');if(state.shift.rate){earn.style.display='block';document.getElementById('earned').textContent=rub(state.shift.rate*c.day)}else earn.style.display='none';
+renderTasks();renderImportant();document.getElementById('adBanner').style.display=state.premium?'none':'block'}
+function toggleTaskInput(){const x=document.getElementById('taskAddBox');x.style.display=x.style.display==='none'?'flex':'none';if(x.style.display==='flex')setTimeout(()=>document.getElementById('taskInput').focus(),50)}
+function addTask(){const i=document.getElementById('taskInput');const t=i.value.trim();if(!t)return;state.tasks.push({id:Date.now(),text:t,done:false,date:todayISO()});i.value='';save();renderTasks()}
+function renderTasks(){const l=document.getElementById('taskList');const arr=[...state.tasks].sort((a,b)=>Number(a.done)-Number(b.done));if(!arr.length){l.innerHTML='<div class="empty">На сегодня задач нет</div>'}else{l.innerHTML='';arr.forEach(t=>{const el=document.createElement('div');el.className='task'+(t.done?' done':'');el.dataset.id=t.id;el.innerHTML='<button class="check">'+(t.done?'✓':'')+'</button><div class="tasktext"></div><button class="iconbtn">×</button>';el.querySelector('.tasktext').textContent=t.text;el.querySelector('.check').onclick=()=>toggleTask(t.id);el.querySelector('.iconbtn').onclick=()=>deleteTask(t.id);swipe(el,t.id);l.appendChild(el)})}
+const done=state.tasks.filter(x=>x.done).length;document.getElementById('taskCounter').textContent=done+'/'+state.tasks.length}
+function toggleTask(id){const t=state.tasks.find(x=>x.id===id);if(t)t.done=!t.done;save();renderTasks()}
+function deleteTask(id){const old=state.tasks.find(x=>x.id===id);state.tasks=state.tasks.filter(x=>x.id!==id);save();renderTasks();toast('Задача удалена')}
+function swipe(el,id){let x=0;el.addEventListener('touchstart',e=>x=e.touches[0].clientX,{passive:true});el.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-x;if(d>70)toggleTask(id);if(d<-70)deleteTask(id)},{passive:true})}
+function openNoteSheet(){document.getElementById('noteModal').classList.add('show')}
+function closeNoteSheet(){document.getElementById('noteModal').classList.remove('show');document.getElementById('noteInput').value='';document.getElementById('noteDate').value=''}
+function saveNote(pin){const text=document.getElementById('noteInput').value.trim();if(!text)return;state.notes.push({id:Date.now(),text,date:document.getElementById('noteDate').value||todayISO(),pinned:pin});save();closeNoteSheet();renderNotes();renderImportant();toast(pin?'Закреплено как важное':'Запись сохранена')}
+function renderNotes(){const l=document.getElementById('notesList');if(!state.notes.length){l.innerHTML='<div class="empty">Здесь будут ваши записи</div>';return}l.innerHTML='';[...state.notes].sort((a,b)=>Number(b.pinned)-Number(a.pinned)).forEach(n=>{const e=document.createElement('div');e.className='note';e.innerHTML='<strong></strong><div class="small"></div><div class="note-actions"><button class="secondary">'+(n.pinned?'Открепить':'Закрепить')+'</button><button class="danger">Удалить</button></div>';e.querySelector('strong').textContent=n.text;e.querySelector('.small').textContent=new Date(n.date+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'});const bs=e.querySelectorAll('button');bs[0].onclick=()=>{n.pinned=!n.pinned;save();renderNotes();renderImportant()};bs[1].onclick=()=>{state.notes=state.notes.filter(x=>x.id!==n.id);save();renderNotes();renderImportant()};l.appendChild(e)})}
+function renderImportant(){const n=[...state.notes].reverse().find(x=>x.pinned);const c=document.getElementById('importantCard');if(!n){c.style.display='none';return}c.style.display='block';document.getElementById('importantText').textContent=n.text;document.getElementById('importantDate').textContent=new Date(n.date+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}
+function toggleTheme(){state.dark=!state.dark;save();applyTheme();renderProfile()}
+function togglePremium(){state.premium=!state.premium;save();renderProfile();renderMain();toast(state.premium?'Реклама отключена — тест':'Бесплатный режим')}
+function applyTheme(){document.body.classList.toggle('dark',state.dark)}
+function renderProfile(){document.getElementById('themeSwitch').classList.toggle('on',state.dark);document.getElementById('premiumSwitch').classList.toggle('on',state.premium);const c=shiftCalc();document.getElementById('shiftSummary').textContent=state.shift?('Старт: '+new Date(state.shift.start+'T00:00:00').toLocaleDateString('ru-RU')+' • '+state.shift.days+' дней'+(c?' • сейчас '+c.day+' день':'')):'Нет активной вахты';const h=document.getElementById('history');h.innerHTML=state.history.length?'':'<div class="empty">История пока пустая</div>';[...state.history].reverse().forEach(x=>{const e=document.createElement('div');e.className='note';e.innerHTML='<strong>'+x.days+' дней</strong><div class="small">'+new Date(x.start+'T00:00:00').toLocaleDateString('ru-RU')+' • завершена '+new Date(x.end+'T00:00:00').toLocaleDateString('ru-RU')+(x.earned?' • '+rub(x.earned):'')+'</div>';h.appendChild(e)})}
+function finishShift(){if(!state.shift)return;const c=shiftCalc();state.history.push({start:state.shift.start,end:todayISO(),days:c.day,earned:state.shift.rate?state.shift.rate*c.day:0});state.shift=null;state.tasks=[];save();toast('Вахта завершена');showScreen('onboarding')}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(window.__tt);window.__tt=setTimeout(()=>e.classList.remove('show'),1800)}
+applyTheme();
+if(state.shift)showScreen('main');else showScreen('onboarding');
+</script>
 </body>
 </html>
