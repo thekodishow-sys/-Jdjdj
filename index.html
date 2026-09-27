@@ -113,8 +113,8 @@ button:active{transform:scale(.985)}
 .important-text{font-size:16px;line-height:1.35;font-weight:820}
 .important-date{font-size:12px;color:var(--muted);margin-top:7px}
 
-.ad{font-size:11px;text-align:center;color:var(--muted);padding:8px 10px 2px}
-.ad-box{height:52px;border:1px dashed var(--line);border-radius:16px;display:flex;align-items:center;justify-content:center;background:var(--surface);margin-top:7px}
+.support-copy{color:var(--muted);font-size:13px;line-height:1.5;margin:9px 0 15px}
+.support-button{width:100%;text-align:center}
 
 .page-title{font-size:28px;font-weight:900;letter-spacing:-1px;margin:5px 2px 16px}
 .note{padding:15px 0;border-top:1px solid var(--line)}
@@ -142,8 +142,12 @@ button:active{transform:scale(.985)}
 .history-item:first-child{border-top:0}
 .history-item b{font-size:14px}
 .history-item span{display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.4}
-.history-right{display:flex;align-items:center;gap:9px}
-.history-money{font-size:12px;font-weight:800;white-space:nowrap}
+.history-period{font-size:12px!important;color:var(--text)!important;font-weight:700}
+.history-item>div:first-child{min-width:0}
+.history-right{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.history-money{text-align:right}
+.history-money small{display:block;color:var(--muted);font-size:10px;font-weight:650;margin-bottom:3px}
+.history-money b{font-size:13px;font-weight:850;white-space:nowrap;color:var(--accent)}
 .history-chevron{color:var(--muted);font-size:20px}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
 .detail-stat{background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:12px}
@@ -256,10 +260,6 @@ button:active{transform:scale(.985)}
       <div id="importantDate" class="important-date"></div>
     </div>
 
-    <div id="adWrap" class="ad">
-      <div>РЕКЛАМА • тестовый блок</div>
-      <div class="ad-box">Здесь будет аккуратный рекламный баннер</div>
-    </div>
   </section>
 
   <section id="notes" class="screen">
@@ -285,7 +285,13 @@ button:active{transform:scale(.985)}
         <div class="avatar">В</div>
         <div><b>Без регистрации</b><span>Данные хранятся на этом устройстве</span></div>
       </div>
-      <button class="soft full" style="margin-top:14px" onclick="toast('VK ID подключим в нативной версии')">Сохранить вахты через VK ID</button>
+
+    </div>
+
+    <div class="card profile-card">
+      <div class="section-title">Поддержать проект ☕</div>
+      <p class="support-copy">Если сегодня хочется сделать доброе дело, можно закинуть разработчику на чай 🤝 Поддержка добровольная — приложение работает и без неё.</p>
+      <button class="soft support-button" onclick="openDonate()">На чай разработчику</button>
     </div>
 
     <div class="card profile-card">
@@ -294,10 +300,6 @@ button:active{transform:scale(.985)}
         <div class="setting">
           <div><strong>Тёмная тема</strong><small>Спокойный режим для вечера</small></div>
           <button id="themeSwitch" class="switch" onclick="toggleTheme()"><i></i></button>
-        </div>
-        <div class="setting">
-          <div><strong>Без рекламы</strong><small>199 ₽ / месяц • 1 990 ₽ / год</small></div>
-          <button id="premiumSwitch" class="switch" onclick="togglePremium()"><i></i></button>
         </div>
         <div class="setting">
           <div><strong>Утренний статус</strong><small>По умолчанию выключен</small></div>
@@ -404,11 +406,12 @@ button:active{transform:scale(.985)}
 
 <script>
 const KEY='vakhtovik_preview_v2';
-const defaults={shift:null,tasks:[],notes:[],history:[],premium:false,dark:false,morning:false,daysPreset:30,nextShift:null,schedule:{work:30,home:30}};
+const defaults={shift:null,tasks:[],notes:[],history:[],dark:false,morning:false,daysPreset:30,nextShift:null,schedule:{work:30,home:30}};
 const state=Object.assign({},defaults,JSON.parse(localStorage.getItem(KEY)||'null')||{});
 state.tasks=Array.isArray(state.tasks)?state.tasks:[];
 state.notes=Array.isArray(state.notes)?state.notes:[];
 state.history=Array.isArray(state.history)?state.history:[];
+delete state.premium; // Удаляем устаревший флаг из ранее сохранённых данных.
 state.history=state.history.map((h,i)=>({
   id:h.id||('legacy_'+i+'_'+(h.end||'')),
   start:h.start||'',
@@ -530,7 +533,6 @@ function renderHome(){
   renderYesterday();
   renderTasks();
   renderImportant();
-  document.getElementById('adWrap').style.display=state.premium?'none':'block';
 }
 function renderYesterday(){
   const old=state.tasks.filter(t=>!t.archived&&!t.done&&t.date&&t.date<todayISO());
@@ -606,12 +608,16 @@ function renderImportant(){
 }
 
 function toggleTheme(){state.dark=!state.dark;save();applyTheme();renderProfile()}
-function togglePremium(){state.premium=!state.premium;save();renderProfile();renderHome();toast(state.premium?'Реклама отключена — тестовый режим':'Бесплатный режим')}
+// Платёжную ссылку можно добавить позднее без изменения локальных данных.
+const DONATE_URL='';
+function openDonate(){
+  if(DONATE_URL){window.open(DONATE_URL,'_blank','noopener,noreferrer');return}
+  toast('Ссылка для поддержки появится позже');
+}
 function toggleMorning(){state.morning=!state.morning;save();renderProfile();toast(state.morning?'Утренний статус включён — макет':'Утренний статус выключен')}
 function applyTheme(){document.body.classList.toggle('dark',!!state.dark);document.querySelector('meta[name=theme-color]').content=state.dark?'#0f1211':'#f3f5f4'}
 function renderProfile(){
   document.getElementById('themeSwitch').classList.toggle('on',!!state.dark);
-  document.getElementById('premiumSwitch').classList.toggle('on',!!state.premium);
   document.getElementById('morningSwitch').classList.toggle('on',!!state.morning);
   const c=shiftCalc();
   document.getElementById('shiftSummary').textContent=state.shift?(dateRu(state.shift.start,{day:'numeric',month:'short'})+' • '+state.shift.days+' дней'+(c?' • сейчас '+c.day+' '+plural(c.day,'день','дня','дней'):'')):'Активной вахты нет';
@@ -626,16 +632,22 @@ function renderProfile(){
     const planned=x.plannedDays||actual;
     const taskText=' • задач '+(x.totalTasks||0)+(x.totalTasks?' • выполнено '+(x.completedTasks||0):'');
     const el=document.createElement('div');el.className='history-item';
-    el.innerHTML='<div><b>'+actual+' '+plural(actual,'день','дня','дней')+(planned&&planned!==actual?' из '+planned:'')+'</b><span>'+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'})+taskText+'</span></div><div class="history-right"><div class="history-money">'+(x.earned?rub(x.earned):'')+'</div><div class="history-chevron">›</div></div>';
+    el.innerHTML='<div><b>'+actual+' '+plural(actual,'день','дня','дней')+(planned&&planned!==actual?' из '+planned:'')+'</b><span class="history-period">'+shiftPeriod(x)+'</span><span>'+taskText.slice(3)+'</span></div><div class="history-right"><div class="history-money"><small>Заработано</small><b>'+shiftEarnings(x)+'</b></div><div class="history-chevron">›</div></div>';
     el.onclick=()=>openHistoryDetail(index);
     h.appendChild(el);
   });
+}
+function shiftPeriod(x){
+  return dateRu(x.start,{day:'numeric',month:'short',year:'numeric'})+' — '+dateRu(x.end,{day:'numeric',month:'short',year:'numeric'});
+}
+function shiftEarnings(x){
+  return x.rate>0||x.earned>0?rub(x.earned):'Не указано';
 }
 function openHistoryDetail(index){
   const x=state.history[index];if(!x)return;
   const actual=x.actualDays||x.days||0;
   const planned=x.plannedDays||actual;
-  document.getElementById('historyTitle').textContent='История задач • '+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'});
+  document.getElementById('historyTitle').textContent='Вахта • '+shiftPeriod(x);
   const tasks=Array.isArray(x.tasks)?x.tasks:[];
   const notes=Array.isArray(x.notes)?x.notes:[];
   const taskRows=tasks.length?tasks.map(t=>'<div class="detail-row"><div class="tick '+(t.done?'':'off')+'">'+(t.done?'✓':'○')+'</div><div>'+escapeHtml(t.text||'')+'</div></div>').join(''):'<div class="detail-empty">Задач в этой вахте не сохранено</div>';
@@ -644,7 +656,7 @@ function openHistoryDetail(index){
     '<div class="detail-grid">'+
       '<div class="detail-stat"><span>Фактически</span><b>'+actual+' '+plural(actual,'день','дня','дней')+'</b></div>'+
       '<div class="detail-stat"><span>План</span><b>'+planned+' '+plural(planned,'день','дня','дней')+'</b></div>'+
-      '<div class="detail-stat"><span>Заработано</span><b>'+(x.earned?rub(x.earned):'—')+'</b></div>'+
+      '<div class="detail-stat"><span>Заработано</span><b>'+shiftEarnings(x)+'</b></div>'+
       '<div class="detail-stat"><span>Задачи</span><b>'+(x.completedTasks||0)+' / '+(x.totalTasks||0)+'</b></div>'+
     '</div>'+
     '<div class="detail-block"><div class="detail-block-title">История задач</div>'+taskRows+'</div>'+
