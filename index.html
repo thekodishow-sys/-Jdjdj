@@ -138,11 +138,24 @@ button:active{transform:scale(.985)}
 .switch i{display:block;width:23px;height:23px;border-radius:50%;background:white;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:.2s}
 .switch.on{background:var(--accent)}
 .switch.on i{transform:translateX(19px)}
-.history-item{padding:13px 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.history-item{padding:14px 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
 .history-item:first-child{border-top:0}
 .history-item b{font-size:14px}
-.history-item span{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.history-item span{display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.4}
+.history-right{display:flex;align-items:center;gap:9px}
 .history-money{font-size:12px;font-weight:800;white-space:nowrap}
+.history-chevron{color:var(--muted);font-size:20px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.detail-stat{background:var(--surface2);border:1px solid var(--line);border-radius:16px;padding:12px}
+.detail-stat span{display:block;color:var(--muted);font-size:10px;font-weight:750;margin-bottom:4px}
+.detail-stat b{font-size:14px}
+.detail-block{margin-top:16px}
+.detail-block-title{font-size:13px;font-weight:850;margin-bottom:7px}
+.detail-row{padding:10px 0;border-top:1px solid var(--line);font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.detail-row:first-child{border-top:0}
+.detail-row .tick{color:var(--accent);font-weight:900;min-width:17px}
+.detail-row .off{color:var(--muted)}
+.detail-empty{color:var(--muted);font-size:12px;padding:8px 0}
 
 .nav{position:fixed;z-index:30;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(490px,calc(100% - 22px));height:68px;background:var(--nav);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:23px;box-shadow:0 13px 45px rgba(20,30,27,.12);display:flex;padding:7px}
 .nav button{flex:1;border-radius:17px;background:transparent;color:var(--muted);font-size:10px;font-weight:750;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
@@ -376,6 +389,17 @@ button:active{transform:scale(.985)}
   </div>
 </div>
 
+<div id="historyModal" class="modal" onclick="if(event.target===this)closeModal('historyModal')">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div id="historyTitle" class="sheet-title">Вахта</div>
+    <div id="historyDetail"></div>
+    <div class="sheet-actions">
+      <button class="secondary" onclick="closeModal('historyModal')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -385,7 +409,23 @@ const state=Object.assign({},defaults,JSON.parse(localStorage.getItem(KEY)||'nul
 state.tasks=Array.isArray(state.tasks)?state.tasks:[];
 state.notes=Array.isArray(state.notes)?state.notes:[];
 state.history=Array.isArray(state.history)?state.history:[];
+state.history=state.history.map((h,i)=>({
+  id:h.id||('legacy_'+i+'_'+(h.end||'')),
+  start:h.start||'',
+  end:h.end||h.start||'',
+  plannedDays:h.plannedDays||h.days||0,
+  actualDays:h.actualDays||h.days||0,
+  days:h.actualDays||h.days||0,
+  rate:h.rate||0,
+  earned:h.earned||0,
+  tasks:Array.isArray(h.tasks)?h.tasks:[],
+  notes:Array.isArray(h.notes)?h.notes:[],
+  completedTasks:Number.isFinite(h.completedTasks)?h.completedTasks:(Array.isArray(h.tasks)?h.tasks.filter(t=>t.done).length:0),
+  totalTasks:Number.isFinite(h.totalTasks)?h.totalTasks:(Array.isArray(h.tasks)?h.tasks.length:0),
+  finishedAt:h.finishedAt||null
+}));
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function addDaysISO(v,days){const d=new Date(v+'T00:00:00');d.setDate(d.getDate()+days);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
 function todayISO(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
 function dateRu(v,opts={day:'numeric',month:'long'}){if(!v)return'';return new Date(v+'T00:00:00').toLocaleDateString('ru-RU',opts)}
 function plural(n,one,few,many){n=Math.abs(n)%100;let n1=n%10;if(n>10&&n<20)return many;if(n1>1&&n1<5)return few;if(n1===1)return one;return many}
@@ -434,8 +474,10 @@ function startShift(){
   const start=document.getElementById('startDate').value||todayISO();
   const days=state.daysPreset||30;
   const rate=+document.getElementById('rate').value||0;
-  state.shift={start,days,rate,createdAt:Date.now()};
+  state.shift={id:'shift_'+Date.now(),start,days,rate,createdAt:Date.now()};
   state.nextShift=null;
+  state.tasks.forEach(t=>{if(!t.shiftId)t.shiftId=state.shift.id});
+  state.notes.forEach(n=>{if(!n.shiftId)n.shiftId=state.shift.id});
   save();closeModal('shiftModal');haptic();renderHome();toast('Вахта началась');
 }
 function savePlan(){
@@ -491,20 +533,20 @@ function renderHome(){
   document.getElementById('adWrap').style.display=state.premium?'none':'block';
 }
 function renderYesterday(){
-  const old=state.tasks.filter(t=>!t.done&&t.date&&t.date<todayISO());
+  const old=state.tasks.filter(t=>!t.archived&&!t.done&&t.date&&t.date<todayISO());
   const wrap=document.getElementById('yesterdayBanner');
   if(!old.length){wrap.innerHTML='';return}
   wrap.innerHTML='<div class="card section-card" style="padding:14px 16px"><div class="task-banner" style="margin:0"><div class="grow">Остались задачи со вчера: '+old.length+'</div><button onclick="moveOldTasks()">Перенести</button><button onclick="archiveOldTasks()">В историю</button></div></div>';
 }
 function moveOldTasks(){state.tasks.forEach(t=>{if(!t.done&&t.date<todayISO())t.date=todayISO()});save();renderHome();toast('Перенесено на сегодня')}
-function archiveOldTasks(){state.tasks=state.tasks.filter(t=>t.done||!t.date||t.date>=todayISO());save();renderHome();toast('Оставлено в истории')}
+function archiveOldTasks(){state.tasks.forEach(t=>{if(!t.done&&t.date&&t.date<todayISO())t.archived=true});save();renderHome();toast('Задачи сохранены в истории вахты')}
 
 function focusTask(){document.getElementById('taskInput').focus()}
 function addTask(){
   const input=document.getElementById('taskInput');const text=input.value.trim();if(!text)return;
-  state.tasks.push({id:Date.now(),text,done:false,date:todayISO()});input.value='';save();haptic();renderTasks();
+  state.tasks.push({id:Date.now(),text,done:false,date:todayISO(),shiftId:state.shift?.id||null,archived:false});input.value='';save();haptic();renderTasks();
 }
-function todaysTasks(){return state.tasks.filter(t=>!t.date||t.date===todayISO())}
+function todaysTasks(){return state.tasks.filter(t=>!t.archived&&(!t.date||t.date===todayISO()))}
 function renderTasks(){
   const list=document.getElementById('taskList');
   const arr=[...todaysTasks()].sort((a,b)=>Number(a.done)-Number(b.done));
@@ -536,7 +578,7 @@ function bindSwipe(el,id){
 
 function saveNote(pin){
   const input=document.getElementById('noteInput');const text=input.value.trim();if(!text){toast('Введите текст записи');return}
-  state.notes.push({id:Date.now(),text,date:document.getElementById('noteDate').value||todayISO(),pinned:pin});
+  state.notes.push({id:Date.now(),text,date:document.getElementById('noteDate').value||todayISO(),pinned:pin,shiftId:state.shift?.id||null});
   save();closeModal('noteModal');haptic();renderNotes();renderImportant();toast(pin?'Закреплено на Главной':'Запись сохранена');
 }
 function renderNotes(){
@@ -572,27 +614,82 @@ function renderProfile(){
   document.getElementById('premiumSwitch').classList.toggle('on',!!state.premium);
   document.getElementById('morningSwitch').classList.toggle('on',!!state.morning);
   const c=shiftCalc();
-  document.getElementById('shiftSummary').textContent=state.shift?(dateRu(state.shift.start,{day:'numeric',month:'short'})+' • '+state.shift.days+' дней'+(c?' • сейчас '+c.day+' день':'')):'Активной вахты нет';
+  document.getElementById('shiftSummary').textContent=state.shift?(dateRu(state.shift.start,{day:'numeric',month:'short'})+' • '+state.shift.days+' дней'+(c?' • сейчас '+c.day+' '+plural(c.day,'день','дня','дней'):'')):'Активной вахты нет';
   document.getElementById('finishBtn').style.display=state.shift?'block':'none';
   document.getElementById('startFromProfile').style.display=state.shift?'none':'block';
+
   const h=document.getElementById('history');h.innerHTML='';
   if(!state.history.length){h.innerHTML='<div class="empty">После завершения вахты она появится здесь</div>';return}
-  [...state.history].reverse().forEach(x=>{
+
+  state.history.map((x,index)=>({x,index})).reverse().forEach(({x,index})=>{
+    const actual=x.actualDays||x.days||0;
+    const planned=x.plannedDays||actual;
+    const taskText=x.totalTasks?(' • задачи '+(x.completedTasks||0)+'/'+x.totalTasks):'';
     const el=document.createElement('div');el.className='history-item';
-    el.innerHTML='<div><b>'+x.days+' '+plural(x.days,'день','дня','дней')+'</b><span>'+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'})+'</span></div><div class="history-money">'+(x.earned?rub(x.earned):'')+'</div>';
+    el.innerHTML='<div><b>'+actual+' '+plural(actual,'день','дня','дней')+(planned&&planned!==actual?' из '+planned:'')+'</b><span>'+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'})+taskText+'</span></div><div class="history-right"><div class="history-money">'+(x.earned?rub(x.earned):'')+'</div><div class="history-chevron">›</div></div>';
+    el.onclick=()=>openHistoryDetail(index);
     h.appendChild(el);
   });
 }
+function openHistoryDetail(index){
+  const x=state.history[index];if(!x)return;
+  const actual=x.actualDays||x.days||0;
+  const planned=x.plannedDays||actual;
+  document.getElementById('historyTitle').textContent='Вахта • '+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'});
+  const tasks=Array.isArray(x.tasks)?x.tasks:[];
+  const notes=Array.isArray(x.notes)?x.notes:[];
+  const taskRows=tasks.length?tasks.map(t=>'<div class="detail-row"><div class="tick '+(t.done?'':'off')+'">'+(t.done?'✓':'○')+'</div><div>'+escapeHtml(t.text||'')+'</div></div>').join(''):'<div class="detail-empty">Задач в этой вахте не сохранено</div>';
+  const noteRows=notes.length?notes.map(n=>'<div class="detail-row"><div class="tick">•</div><div>'+escapeHtml(n.text||'')+'<div class="note-meta">'+dateRu(n.date)+'</div></div></div>').join(''):'<div class="detail-empty">Записей в этой вахте не сохранено</div>';
+  document.getElementById('historyDetail').innerHTML=
+    '<div class="detail-grid">'+
+      '<div class="detail-stat"><span>Фактически</span><b>'+actual+' '+plural(actual,'день','дня','дней')+'</b></div>'+
+      '<div class="detail-stat"><span>План</span><b>'+planned+' '+plural(planned,'день','дня','дней')+'</b></div>'+
+      '<div class="detail-stat"><span>Заработано</span><b>'+(x.earned?rub(x.earned):'—')+'</b></div>'+
+      '<div class="detail-stat"><span>Задачи</span><b>'+(x.completedTasks||0)+' / '+(x.totalTasks||0)+'</b></div>'+
+    '</div>'+
+    '<div class="detail-block"><div class="detail-block-title">Задачи</div>'+taskRows+'</div>'+
+    '<div class="detail-block"><div class="detail-block-title">Записи</div>'+noteRows+'</div>';
+  openModal('historyModal');
+}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]))}
 function finishShift(){
   if(!state.shift){openShiftSheet();return}
   if(!confirm('Завершить текущую вахту?'))return;
-  const c=shiftCalc();
-  state.history.push({start:state.shift.start,end:todayISO(),days:c.day,earned:state.shift.rate?state.shift.rate*c.day:0});
+
+  const end=todayISO();
+  const plannedDays=state.shift.days||0;
+  const actualDays=Math.max(1,Math.min(plannedDays||9999,diffDays(state.shift.start,end)+1));
+  const sid=state.shift.id||null;
+  const shiftTasks=state.tasks.filter(t=>!sid||!t.shiftId||t.shiftId===sid);
+  const shiftNotes=state.notes.filter(n=>!sid||!n.shiftId||n.shiftId===sid);
+  const completedTasks=shiftTasks.filter(t=>t.done).length;
+  const earned=state.shift.rate?state.shift.rate*actualDays:0;
+
+  state.history.push({
+    id:sid||('shift_'+Date.now()),
+    start:state.shift.start,
+    end,
+    plannedDays,
+    actualDays,
+    days:actualDays,
+    plannedEnd:addDaysISO(state.shift.start,Math.max(0,plannedDays-1)),
+    rate:state.shift.rate||0,
+    earned,
+    completedTasks,
+    totalTasks:shiftTasks.length,
+    tasks:shiftTasks.map(t=>({id:t.id,text:t.text,done:!!t.done,date:t.date||'',archived:!!t.archived})),
+    notes:shiftNotes.map(n=>({id:n.id,text:n.text,date:n.date||'',pinned:!!n.pinned})),
+    finishedAt:Date.now()
+  });
+
+  state.tasks=state.tasks.filter(t=>sid&&t.shiftId&&t.shiftId!==sid);
+  state.notes=state.notes.filter(n=>sid&&n.shiftId&&n.shiftId!==sid);
+
   if(state.schedule&&state.schedule.home){
-    const d=new Date(todayISO()+'T00:00:00');d.setDate(d.getDate()+state.schedule.home);
-    d.setMinutes(d.getMinutes()-d.getTimezoneOffset());state.nextShift=d.toISOString().slice(0,10);
+    state.nextShift=addDaysISO(end,state.schedule.home);
   }
-  state.shift=null;save();haptic();navTo('home');toast('Вахта завершена. Вы дома');
+  state.shift=null;
+  save();haptic();navTo('home');toast('Вахта завершена и сохранена в истории');
 }
 function toast(text,undo=false){
   const el=document.getElementById('toast');
