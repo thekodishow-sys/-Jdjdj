@@ -313,7 +313,7 @@ button:active{transform:scale(.985)}
     </div>
 
     <div class="card profile-card">
-      <div class="section-head"><div><div class="section-title">Мои вахты</div><div class="section-caption">История завершённых</div></div></div>
+      <div class="section-head"><div><div class="section-title">История</div><div class="section-caption">Нажмите на вахту, чтобы открыть историю задач</div></div></div>
       <div id="history"></div>
     </div>
   </section>
@@ -624,7 +624,7 @@ function renderProfile(){
   state.history.map((x,index)=>({x,index})).reverse().forEach(({x,index})=>{
     const actual=x.actualDays||x.days||0;
     const planned=x.plannedDays||actual;
-    const taskText=x.totalTasks?(' • задачи '+(x.completedTasks||0)+'/'+x.totalTasks):'';
+    const taskText=' • задач '+(x.totalTasks||0)+(x.totalTasks?' • выполнено '+(x.completedTasks||0):'');
     const el=document.createElement('div');el.className='history-item';
     el.innerHTML='<div><b>'+actual+' '+plural(actual,'день','дня','дней')+(planned&&planned!==actual?' из '+planned:'')+'</b><span>'+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'})+taskText+'</span></div><div class="history-right"><div class="history-money">'+(x.earned?rub(x.earned):'')+'</div><div class="history-chevron">›</div></div>';
     el.onclick=()=>openHistoryDetail(index);
@@ -635,7 +635,7 @@ function openHistoryDetail(index){
   const x=state.history[index];if(!x)return;
   const actual=x.actualDays||x.days||0;
   const planned=x.plannedDays||actual;
-  document.getElementById('historyTitle').textContent='Вахта • '+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'});
+  document.getElementById('historyTitle').textContent='История задач • '+dateRu(x.start,{day:'numeric',month:'short'})+' — '+dateRu(x.end,{day:'numeric',month:'short'});
   const tasks=Array.isArray(x.tasks)?x.tasks:[];
   const notes=Array.isArray(x.notes)?x.notes:[];
   const taskRows=tasks.length?tasks.map(t=>'<div class="detail-row"><div class="tick '+(t.done?'':'off')+'">'+(t.done?'✓':'○')+'</div><div>'+escapeHtml(t.text||'')+'</div></div>').join(''):'<div class="detail-empty">Задач в этой вахте не сохранено</div>';
@@ -647,7 +647,7 @@ function openHistoryDetail(index){
       '<div class="detail-stat"><span>Заработано</span><b>'+(x.earned?rub(x.earned):'—')+'</b></div>'+
       '<div class="detail-stat"><span>Задачи</span><b>'+(x.completedTasks||0)+' / '+(x.totalTasks||0)+'</b></div>'+
     '</div>'+
-    '<div class="detail-block"><div class="detail-block-title">Задачи</div>'+taskRows+'</div>'+
+    '<div class="detail-block"><div class="detail-block-title">История задач</div>'+taskRows+'</div>'+
     '<div class="detail-block"><div class="detail-block-title">Записи</div>'+noteRows+'</div>';
   openModal('historyModal');
 }
@@ -659,14 +659,21 @@ function finishShift(){
   const end=todayISO();
   const plannedDays=state.shift.days||0;
   const actualDays=Math.max(1,Math.min(plannedDays||9999,diffDays(state.shift.start,end)+1));
-  const sid=state.shift.id||null;
-  const shiftTasks=state.tasks.filter(t=>!sid||!t.shiftId||t.shiftId===sid);
-  const shiftNotes=state.notes.filter(n=>!sid||!n.shiftId||n.shiftId===sid);
+  const sid=state.shift.id||('shift_'+(state.shift.createdAt||Date.now()));
+
+  // Всё, что сейчас находится в списке задач активной вахты,
+  // сохраняем в снимок истории и затем удаляем из активного списка.
+  const shiftTasks=state.tasks.filter(t=>!t.shiftId||t.shiftId===sid);
+  const shiftTaskIds=new Set(shiftTasks.map(t=>t.id));
+
+  const shiftNotes=state.notes.filter(n=>!n.shiftId||n.shiftId===sid);
+  const shiftNoteIds=new Set(shiftNotes.map(n=>n.id));
+
   const completedTasks=shiftTasks.filter(t=>t.done).length;
   const earned=state.shift.rate?state.shift.rate*actualDays:0;
 
   state.history.push({
-    id:sid||('shift_'+Date.now()),
+    id:sid,
     start:state.shift.start,
     end,
     plannedDays,
@@ -677,19 +684,37 @@ function finishShift(){
     earned,
     completedTasks,
     totalTasks:shiftTasks.length,
-    tasks:shiftTasks.map(t=>({id:t.id,text:t.text,done:!!t.done,date:t.date||'',archived:!!t.archived})),
-    notes:shiftNotes.map(n=>({id:n.id,text:n.text,date:n.date||'',pinned:!!n.pinned})),
+    tasks:shiftTasks.map(t=>({
+      id:t.id,
+      text:t.text,
+      done:!!t.done,
+      date:t.date||'',
+      archived:!!t.archived
+    })),
+    notes:shiftNotes.map(n=>({
+      id:n.id,
+      text:n.text,
+      date:n.date||'',
+      pinned:!!n.pinned
+    })),
     finishedAt:Date.now()
   });
 
-  state.tasks=state.tasks.filter(t=>sid&&t.shiftId&&t.shiftId!==sid);
-  state.notes=state.notes.filter(n=>sid&&n.shiftId&&n.shiftId!==sid);
+  // Критично: завершённая вахта больше не имеет активных задач/записей.
+  state.tasks=state.tasks.filter(t=>!shiftTaskIds.has(t.id));
+  state.notes=state.notes.filter(n=>!shiftNoteIds.has(n.id));
 
   if(state.schedule&&state.schedule.home){
     state.nextShift=addDaysISO(end,state.schedule.home);
   }
+
   state.shift=null;
-  save();haptic();navTo('home');toast('Вахта завершена и сохранена в истории');
+  save();
+  haptic();
+  renderTasks();
+  renderImportant();
+  navTo('home');
+  toast('Вахта завершена. Задачи перенесены в историю');
 }
 function toast(text,undo=false){
   const el=document.getElementById('toast');
